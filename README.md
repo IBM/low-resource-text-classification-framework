@@ -8,9 +8,7 @@ The framework includes a selection of labeled datasets, machine learning models 
 [Built-in Implementations](#built-in-implementations) below), and can be easily adapted for additional setups and
 scenarios.
 
-
-*NOTE:* the code will be available by November 20th 2020.
-
+NOTE: the code will be available by November 20th 2020.
 
 **Table of contents**
 
@@ -65,7 +63,7 @@ These are the steps for integrating a new classification model:
     The main functions are *train* and *infer*:
     
     **Train** a new model and return a unique model identifier that will be used for inference.
-    ```    
+    ```python    
     def train(self, train_data: Sequence[Mapping], dev_data: Sequence[Mapping], test_data: Sequence[Mapping], 
     train_params: dict) -> str
    ```
@@ -78,7 +76,7 @@ These are the steps for integrating a new classification model:
 
     **Infer** a given sequence of elements and return the results.
 
-    ```    
+    ```python    
     def infer(self, model_id, items_to_infer: Sequence[Mapping], infer_params: dict, use_cache=True) -> dict:
     ```    
     - model_id
@@ -104,7 +102,7 @@ These are the steps for integrating a new active learning approach:
    
    Active learning modules inherit from the ActiveLearner API.
    The main function to implement is *get_recommended_items_for_labeling*:
-   ```
+   ```python
    def get_recommended_items_for_labeling(self, workspace_id: str, model_id: str, dataset_name: str,
                                            category_name: str, sample_size: int = 1) -> Sequence[TextElement]:
     
@@ -132,7 +130,7 @@ These are the steps for adding a new dataset:
 and place it under `lrtc_lib/data_access/processors`.
    `CsvProcessor`  `__init__` function looks like this:
    
-   ```    
+   ```python    
    def __init__(self, dataset_name: str, dataset_part: DatasetPart, text_col: str = 'text',
                  label_col: str = 'label', context_col: str = None,
                  doc_id_col: str = None,
@@ -151,7 +149,7 @@ and place it under `lrtc_lib/data_access/processors`.
     
     For example, here is the processor for DBPedia (which uses the default values of `CsvProcessor`):
        
-   ```
+   ```python
     class DbpediaProcessor(CsvProcessor):
 
     def __init__(self, dataset_part: DatasetPart):
@@ -201,3 +199,4 @@ Liat Ein-Dor, Alon Halfon, Ariel Gera, Eyal Shnarch, Lena Dankin, Leshem Choshen
 
 ## License
 This work is released under the Apache 2.0 license. The full text of the license can be found in [LICENSE](LICENSE).
+
