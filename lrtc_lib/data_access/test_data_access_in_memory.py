@@ -21,7 +21,7 @@ def generate_simple_doc(dataset_name, doc_id=0, add_duplicate=False):
     sentences = ['Document Title is Super Interesting', 'First sentence is not that attractive.',
                  'The second one is a bit better.', 'Last sentence offers a promising view for the future!']
     if add_duplicate:
-        sentences.append('First sentence  is not that attractive,')
+        sentences.append('Document Title is Super Interesting')
     text_elements = []
     start_span = 0
     for idx, sentence in enumerate(sentences):
