@@ -27,10 +27,13 @@ scenarios.
 [License](#license)
 
 ## Installation
+Currently, the framework requires Python 3.7
 1. Clone the repository locally: 
 
    `git clone https://github.com/IBM/low-resource-text-classification-framework`
 2. Install the project dependencies: `pip install -r lrtc_lib/requirements.txt`
+
+   Windows users also need to download the latest [Microsoft Visual C++ Redistributable for Visual Studio](https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads) in order to support tensorflow
 3. Run the shell script `lrtc_lib/download_and_prepare_datasets.sh`.
 This script downloads the [datasets with built-in support](#built-in-implementations).
 
