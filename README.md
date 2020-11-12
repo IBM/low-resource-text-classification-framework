@@ -8,7 +8,6 @@ The framework includes a selection of labeled datasets, machine learning models 
 [Built-in Implementations](#built-in-implementations) below), and can be easily adapted for additional setups and
 scenarios.
 
-NOTE: the code will be available by November 20th 2020.
 
 **Table of contents**
 
@@ -35,6 +34,7 @@ NOTE: the code will be available by November 20th 2020.
 3. Run the shell script `lrtc_lib/download_and_prepare_datasets.sh`.
 This script downloads the [datasets with built-in support](#built-in-implementations).
 
+
 ## Running active learning experiments
 The `ExperimentRunner` class enables running experiments in the vein of [Ein-dor et al. (2020)](#reference),
 i.e. an experimental flow where an initial seed of labeled instances is used to train a model, and then several
@@ -49,8 +49,17 @@ The three scenarios described in the paper are implemented by:
 
 The experiment flow can be performed on a custom combination of datasets, model types and active learning strategies.
 
-The main function of each ExperimentRunner specifies all the experimental parameters. For information on all the
-dataset and category names available for running experiments, run `data_access/loaded_datasets_info.py`.
+To run an experiment from a terminal, go to the repository directory 
+(usually `<path_to_python_projects>/low-resource-text-classification-framework`) and run `python -m path.to.module`, 
+for example: 
+```commandline
+python -m lrtc_lib.experiment_runners.experiment_runner_imbalanced_practical
+```
+Alternatively, an IDE such as PyCharm can be used.
+
+The main function of each ExperimentRunner specifies all the experimental parameters. For information on all the 
+dataset and category names available for running experiments, run `loaded_datasets_info.py`
+using `python -m lrtc_lib.data_access.loaded_datasets_info`.
 
 
 ## Adapting to additional scenarios
@@ -93,7 +102,8 @@ These are the steps for integrating a new classification model:
 2. Specify a new ModelType in `ModelTypes`
 3. Return the newly implemented TrainAndInferAPI in `TrainAndInferFactory`
 4. The system assumes that active learning strategies that require special inference outputs (e.g. text embeddings)
-are not supported by your new model. If your model does support this, add it to the appropriate category in `get_compatible_models`
+are not supported by your new model. If your model does support this, add it to the appropriate category 
+in `get_compatible_models` in `strategies.py`
 5. Set your ModelType in one of the ExperimentRunners, and run
 
 ### Implementing a new active learning strategy
@@ -177,7 +187,6 @@ and place it under `lrtc_lib/data_access/processors`.
 [running the installation script](#installation), and is only supported on Mac/Linux. Specifically, you will need to 
 install [mdbtools](https://github.com/mdbtools/mdbtools) on your machine and then `pip install pandas_access`_.
 
-
 ### Classification models
 - **ModelTypes.NB**: a Naive Bayes implementation from [scikit-learn](https://scikit-learn.org)
 - **ModelTypes.HF_BERT**: A tensorflow implementation of BERT (Devlin et al. 2018) that uses the [huggingface Transformers](https://github.com/huggingface/transformers) library 
@@ -195,7 +204,32 @@ with Monte Carlo dropout (Gal and Ghahramani, 2016)
 
 
 ## Reference
-Liat Ein-Dor, Alon Halfon, Ariel Gera, Eyal Shnarch, Lena Dankin, Leshem Choshen, Marina Danilevsky, Ranit Aharonov, Yoav Katz and Noam Slonim (2020). Active Learning for BERT: An Empirical Study. EMNLP 2020
+Liat Ein-Dor, Alon Halfon, Ariel Gera, Eyal Shnarch, Lena Dankin, Leshem Choshen, Marina Danilevsky, Ranit Aharonov, Yoav Katz and Noam Slonim (2020). 
+[Active Learning for BERT: An Empirical Study](https://www.aclweb.org/anthology/2020.emnlp-main.638/). EMNLP 2020
+
+Please cite: 
+```
+@inproceedings{ein-dor-etal-2020-active,
+    title = "Active Learning for {BERT}: An Empirical Study",
+    author = "Ein-Dor, Liat  and
+      Halfon, Alon  and
+      Gera, Ariel  and
+      Shnarch, Eyal  and
+      Dankin, Lena  and
+      Choshen, Leshem  and
+      Danilevsky, Marina  and
+      Aharonov, Ranit  and
+      Katz, Yoav  and
+      Slonim, Noam",
+    booktitle = "Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing (EMNLP)",
+    month = nov,
+    year = "2020",
+    address = "Online",
+    publisher = "Association for Computational Linguistics",
+    url = "https://www.aclweb.org/anthology/2020.emnlp-main.638",
+    pages = "7949--7962",
+}
+```
 
 ## License
 This work is released under the Apache 2.0 license. The full text of the license can be found in [LICENSE](LICENSE).
