@@ -171,7 +171,6 @@ class TrainAndInferHF(TrainAndInferAPI):
                 output = model(inp[0])
                 outputs["logits"].append(output[0])
                 outputs["hidden_states"].append(output[1])
-            outputs = [model(inp[0]) for inp in input]
             logits = tf.concat(outputs["logits"], axis=0)
             hidden_states = tf.concat(outputs["hidden_states"], axis=1)
             embeddings = hidden_states[-1]  # 0=embedding x=embedding at layer x, only last layer is interesting
