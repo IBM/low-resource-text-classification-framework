@@ -170,11 +170,9 @@ class TrainAndInferHF(TrainAndInferAPI):
             for inp in input:
                 output = model(inp[0])
                 outputs["logits"].append(output[0])
-                outputs["hidden_states"].append(output[1])
+                outputs["hidden_states"].append(output[1][-1][:,0,:])
             logits = tf.concat(outputs["logits"], axis=0)
-            hidden_states = tf.concat(outputs["hidden_states"], axis=1)
-            embeddings = hidden_states[-1]  # 0=embedding x=embedding at layer x, only last layer is interesting
-            out_emb = embeddings[:, 0, :]
+            out_emb = tf.concat(outputs["hidden_states"], axis=0)
         else:  # get embeddings from pooled output, following the logic of TFBertForSequenceClassification "call" func
             outputs = [model.bert(inp[0])[1] for inp in input]
             out_emb = tf.concat(outputs, axis=0)
