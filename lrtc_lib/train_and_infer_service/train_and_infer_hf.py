@@ -166,14 +166,18 @@ class TrainAndInferHF(TrainAndInferAPI):
 
         input = self.process_inputs(items_to_infer).batch(self.infer_batch_size)
         if self.infer_with_cls:  # get embeddings for CLS token in last hidden layer
-            outputs = [model(inp[0]) for inp in input]
-            logits = tf.concat([output[0] for output in outputs], axis=0)
-            hidden_states = tf.concat([output[1] for output in outputs], axis=1)
+            outputs = {"hidden_states":[],"logits":[]}
+            for inp in input:
+                output = model(inp[0])
+                outputs["logits"].append(output[0])
+                outputs["hidden_states"].append(output[1])
+            logits = tf.concat(outputs["logits"], axis=0)
+            hidden_states = tf.concat(outputs["hidden_states"], axis=1)
             embeddings = hidden_states[-1]  # 0=embedding x=embedding at layer x, only last layer is interesting
             out_emb = embeddings[:, 0, :]
         else:  # get embeddings from pooled output, following the logic of TFBertForSequenceClassification "call" func
-            outputs = [model.bert(inp[0]) for inp in input]
-            out_emb = tf.concat([output[1] for output in outputs], axis=0)
+            outputs = [model.bert(inp[0])[1] for inp in input]
+            out_emb = tf.concat(outputs, axis=0)
             pooled_output = model.dropout(out_emb, training=False)
             logits = model.classifier(pooled_output)
         labels = [int(np.argmax(logit)) for logit in logits]
