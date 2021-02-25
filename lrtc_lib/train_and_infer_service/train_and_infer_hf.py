@@ -170,9 +170,9 @@ class TrainAndInferHF(TrainAndInferAPI):
             for inp in input:
                 output = model(inp[0])
                 outputs["logits"].append(output[0])
-                outputs["hidden_states"].append(output[1][-1][:,0,:])
+                outputs["cls"].append(output[1][-1][:, 0, :])
             logits = tf.concat(outputs["logits"], axis=0)
-            out_emb = tf.concat(outputs["hidden_states"], axis=0)
+            out_emb = tf.concat(outputs["cls"], axis=0)
         else:  # get embeddings from pooled output, following the logic of TFBertForSequenceClassification "call" func
             outputs = [model.bert(inp[0])[1] for inp in input]
             out_emb = tf.concat(outputs, axis=0)
