@@ -166,7 +166,7 @@ class TrainAndInferHF(TrainAndInferAPI):
 
         input = self.process_inputs(items_to_infer).batch(self.infer_batch_size)
         if self.infer_with_cls:  # get embeddings for CLS token in last hidden layer
-            outputs = {"hidden_states":[],"logits":[]}
+            outputs = {"cls": [], "logits": []}
             for inp in input:
                 output = model(inp[0])
                 outputs["logits"].append(output[0])
