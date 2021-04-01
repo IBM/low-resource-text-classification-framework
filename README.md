@@ -80,8 +80,8 @@ These are the steps for integrating a new classification model:
     train_params: dict) -> str
    ```
         
-    - train_data - a list of dictionaries with at least the "text" field. Additional fields can be passed e.g.
-    *[{'text': 'text1', 'additional_field': 'value1'}, {'text': 'text2', 'additional_field': 'value2'}]*
+    - train_data - a list of dictionaries with at least the "text" and "label" fields. Additional fields can be passed e.g.
+    *[{'text': 'text1', 'label': 1, 'additional_field': 'value1'}, {'text': 'text2', 'label': 0, 'additional_field': 'value2'}]*
     - dev_data: can be None if not used by the implemented model
     - test_data - can be None if not used by the implemented model
     - train_params - dictionary for additional train parameters (can be None)
