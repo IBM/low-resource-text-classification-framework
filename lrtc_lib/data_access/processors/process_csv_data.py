@@ -3,13 +3,12 @@
 # LICENSE: Apache License 2.0 (Apache-2.0)
 # http://www.apache.org/licenses/LICENSE-2.0
 
-import abc
 import os
 from collections import defaultdict
+from typing import List, Mapping, Tuple
 
 import pandas as pd
 
-from typing import List, Mapping, Tuple
 from lrtc_lib.data_access.core.data_structs import Document, TextElement, Label, nested_default_dict
 from lrtc_lib.data_access.processors.data_processor_api import DataProcessorAPI, METADATA_CONTEXT_KEY
 from lrtc_lib.data_access.processors.dataset_part import DatasetPart
@@ -110,16 +109,13 @@ class CsvProcessor(DataProcessorAPI):
         texts_categories_contexts_doc_ids = \
             add_column_or_default_to_zip(texts_categories_contexts_doc_ids, df, self.doc_id_col, 0)
 
-        text_elements = []
         uri_to_category_labels = []
         prev_doc_id = None
         element_id = -1
-        doc_uri = ''
         text_span_start = 0
+        doc_uri_to_text_elements = defaultdict(list)
         for idx, (text, category, context, doc_id) in enumerate(texts_categories_contexts_doc_ids):
-            if prev_doc_id and prev_doc_id != doc_id:
-                self.documents.append(Document(uri=doc_uri, text_elements=text_elements, metadata={}))
-                text_elements = []
+            if prev_doc_id is not None and prev_doc_id != doc_id:
                 element_id = -1
                 text_span_start = 0
 
@@ -130,13 +126,14 @@ class CsvProcessor(DataProcessorAPI):
             text_element = TextElement(uri=text_element_uri, text=text,
                                        span=[(text_span_start, (text_span_start+len(text)))], metadata=metadata,
                                        category_to_label={})
-            text_elements.append(text_element)
-            category_to_label_dict = {cat: Label(labels=self.LABEL_POSITIVE, metadata={}) if cat == category
-            else Label(labels=self.LABEL_NEGATIVE, metadata={}) for cat in all_categories}
+            doc_uri_to_text_elements[doc_uri].append(text_element)
+            category_to_label_dict = \
+                {cat: Label(labels=self.LABEL_POSITIVE, metadata={}) if cat == category
+                else Label(labels=self.LABEL_NEGATIVE, metadata={}) for cat in all_categories}
             uri_to_category_labels.append((text_element_uri, category_to_label_dict))
             prev_doc_id = doc_id
             text_span_start += (len(text) + 1)
 
-        if self.doc_id_col is None:
-            self.documents = [Document(uri=doc_uri, text_elements=text_elements, metadata={})]
+        self.documents = [Document(uri=doc_uri, text_elements=text_elements, metadata={})
+                          for doc_uri, text_elements in doc_uri_to_text_elements.items()]
         self.uri_category_labels = uri_to_category_labels
