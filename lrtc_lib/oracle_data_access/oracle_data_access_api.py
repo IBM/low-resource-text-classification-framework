@@ -9,8 +9,10 @@ import ujson as json
 from typing import Sequence, List, Mapping, Tuple, Set
 
 import lrtc_lib.oracle_data_access.core.utils as oracle_utils
+from data_access.data_access_api import DataAccessApi
 from lrtc_lib.data_access.core.data_structs import Label
 from lrtc_lib.orchestrator.orchestrator_api import LABEL_POSITIVE, LABEL_NEGATIVE
+from oracle_data_access.core.utils import create_gold_labels_online
 
 
 def add_gold_labels(dataset_name: str, text_and_gold_labels: List[Tuple[str, Mapping[str, Label]]]):
@@ -34,7 +36,8 @@ def add_gold_labels(dataset_name: str, text_and_gold_labels: List[Tuple[str, Map
         f.write(gold_labels_encoded)
 
 
-def get_gold_labels(dataset_name: str, text_element_uris: Sequence[str], category_name: str = None) -> \
+def get_gold_labels(dataset_name: str, text_element_uris: Sequence[str], category_name: str = None,
+                    data_access: DataAccessApi = None) -> \
         List[Tuple[str, Mapping[str, Label]]]:
     """
     Return the gold labels information for the given TextElements uris, keeping the same order, for the given dataset.
@@ -48,8 +51,19 @@ def get_gold_labels(dataset_name: str, text_element_uris: Sequence[str], categor
     same order as the order of the TextElement uris given as input.
     """
 
-    gold_labels = oracle_utils.get_gold_labels(dataset_name, category_name)
-    return [(uri, gold_labels[uri]) for uri in text_element_uris if gold_labels[uri]]
+    gold_labels = oracle_utils.get_gold_labels(dataset_name, None)
+    uris_missing = [uri for uri in text_element_uris
+                    if uri not in gold_labels or not gold_labels[uri]]
+
+    if uris_missing:
+        create_gold_labels_online(dataset_name, category_name, uris_missing, data_access)
+
+    gold_labels = oracle_utils.get_gold_labels(dataset_name, None)
+    gold_labels_dataset = [(uri, gold_labels[uri])
+                           for uri in text_element_uris
+                           if uri in gold_labels and gold_labels[uri]]
+
+    return gold_labels_dataset
 
 
 def sample(dataset_name: str, category_name: str, sample_size: int, random_seed: int):

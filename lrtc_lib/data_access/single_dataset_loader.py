@@ -58,9 +58,7 @@ def clear_all_saved_files(dataset_name):
 
 
 if __name__ == '__main__':
-    all_dataset_sources = ['ag_news', 'ag_news_imbalanced_1', 'cola', 'isear',
-                           'polarity', 'polarity_imbalanced_positive',
-                           'subjectivity', 'subjectivity_imbalanced_subjective', 'trec', 'wiki_attack']
+    all_dataset_sources = ['hemnet_descriptions', 'trec']
 
     for dataset_source in all_dataset_sources:
         for part in DatasetPart:

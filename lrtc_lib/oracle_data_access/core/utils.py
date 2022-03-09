@@ -4,13 +4,16 @@
 # http://www.apache.org/licenses/LICENSE-2.0
 
 import ujson as json
+import json as json2
 import os
 import random
-from typing import Mapping
+from typing import Mapping, List
 
+from data_access.data_access_api import DataAccessApi
 from lrtc_lib.definitions import ROOT_DIR
 from lrtc_lib.definitions import PROJECT_PROPERTIES
 from lrtc_lib.data_access.core.data_structs import nested_default_dict, Label
+from orchestrator.orchestrator_api import LABEL_POSITIVE, LABEL_NEGATIVE
 
 gold_labels_per_dataset: (str, nested_default_dict()) = None  # (dataset, URIs -> categories -> Label)
 
@@ -30,6 +33,15 @@ def get_gold_labels(dataset_name: str,  category_name: str = None) -> Mapping[st
     categories.
     :return: # URIs -> categories -> Label
     """
+    uri_categories_and_labels_map = _read_gold_labels(dataset_name)[1]
+
+    if category_name is not None:
+        data_view_func = PROJECT_PROPERTIES["data_view_func"]
+        uri_categories_and_labels_map = data_view_func(category_name, uri_categories_and_labels_map)
+    return uri_categories_and_labels_map
+
+
+def _read_gold_labels(dataset_name):
     global gold_labels_per_dataset
 
     if gold_labels_per_dataset is None or gold_labels_per_dataset[0] != dataset_name:  # not in memory
@@ -43,11 +55,56 @@ def get_gold_labels(dataset_name: str,  category_name: str = None) -> Mapping[st
         else:  # or create an empty in-memory
             gold_labels_per_dataset = (dataset_name, nested_default_dict())
 
-    uri_categories_and_labels_map = gold_labels_per_dataset[1]
-    if category_name is not None:
-        data_view_func = PROJECT_PROPERTIES["data_view_func"]
-        uri_categories_and_labels_map = data_view_func(category_name, uri_categories_and_labels_map)
-    return uri_categories_and_labels_map
+    return gold_labels_per_dataset
+
+
+def create_gold_labels_online(dataset_name: str,
+                              category_name: str,
+                              text_element_uris: List[str],
+                              data_access: DataAccessApi) -> None:
+    """
+    {
+      "trec_dev-0-0": {
+        "ABBR": {
+          "labels": [
+            "false"
+          ],
+          "metadata": {}
+        },
+        "DESC": {
+          "labels": [
+            "true"
+          ],
+          "metadata": {}
+        },
+
+    """
+    assert category_name
+
+    doc_uris = [uri[:-2] for uri in text_element_uris]
+    docs = data_access.get_documents(dataset_name, doc_uris)
+
+    i = 0
+
+    for doc in docs:
+        for text_element in doc.text_elements:
+            if text_element.uri in text_element_uris:
+                i += 1
+                print("-" * 30, f"{i}/{len(text_element_uris)}", "-" * 30)
+                print(text_element.text)
+                label_input = input()
+                label = LABEL_POSITIVE if label_input else LABEL_NEGATIVE
+                with open(get_labels_dump_filename(dataset_name), "r") as json_file:
+                    text_and_gold_labels_encoded = json.load(json_file)
+                    text_and_gold_labels_encoded[text_element.uri] = text_and_gold_labels_encoded.get(
+                        text_element.uri, {})
+                    text_and_gold_labels_encoded[text_element.uri][category_name] = {
+                        "labels": [label],
+                        "metadata": {}
+                    }
+                    print("-->", label)
+                with open(get_labels_dump_filename(dataset_name), "w") as json_file:
+                    json2.dump(text_and_gold_labels_encoded, json_file)
 
 
 def sample(dataset_name: str, category_name: str, sample_size: int, random_seed: int, restrict_label: str = None):

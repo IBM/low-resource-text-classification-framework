@@ -75,7 +75,9 @@ class ExperimentRunnerImbalancedPractical(ExperimentRunner):
 
         sampled_uris = [t.uri for t in sampled_unlabeled_text_elements]
         sampled_uris_and_gold_labels = dict(
-            oracle_data_access_api.get_gold_labels(config.train_dataset_name, sampled_uris))
+            oracle_data_access_api.get_gold_labels(config.train_dataset_name, sampled_uris,
+                                                   category_name=config.category_name,
+                                                   data_access=self.data_access))
         sampled_uris_and_label = \
             [(x.uri, {config.category_name: sampled_uris_and_gold_labels[x.uri][config.category_name]})
              for x in sampled_unlabeled_text_elements]
@@ -143,17 +145,23 @@ if __name__ == '__main__':
 
     # define experiments parameters
     experiment_name = 'query_NB'
-    active_learning_iterations_num = 1
+    active_learning_iterations_num = 3
     num_experiment_repeats = 1
     # for full list of datasets and categories available run: python -m lrtc_lib.data_access.loaded_datasets_info
-    datasets_categories_and_queries = {'trec': {'LOC': ['Where|countr.*|cit.*']}}
-    classification_models = [ModelTypes.NB]
+    datasets_categories_and_queries = {
+        #'trec': {'LOC': ['Where|countr.*|cit.*']}
+        'hemnet_descriptions': {'needs_renovation': ['renoveringsbehov|drömhem']}
+    }
+    classification_models = [
+        ModelTypes.HFBERT
+        #ModelTypes.NB
+    ]
     train_params = {ModelTypes.HFBERT: {"metric": "f1"}, ModelTypes.NB: {}}
-    active_learning_strategies = [ActiveLearningStrategies.RANDOM, ActiveLearningStrategies.HARD_MINING]
+    active_learning_strategies = [ActiveLearningStrategies.DAL]
 
-    experiments_runner = ExperimentRunnerImbalancedPractical(first_model_labeled_from_query_num=100,
-                                                             first_model_negatives_num=100,
-                                                             active_learning_suggestions_num=50,
+    experiments_runner = ExperimentRunnerImbalancedPractical(first_model_labeled_from_query_num=150,
+                                                             first_model_negatives_num=150,
+                                                             active_learning_suggestions_num=20,
                                                              queries_per_dataset=datasets_categories_and_queries)
 
     results_file_path, results_file_path_aggregated = res_handler.get_results_files_paths(

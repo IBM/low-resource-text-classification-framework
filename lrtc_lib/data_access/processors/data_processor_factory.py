@@ -2,7 +2,7 @@
 
 # LICENSE: Apache License 2.0 (Apache-2.0)
 # http://www.apache.org/licenses/LICENSE-2.0
-
+from data_access.processors.process_hemnet_descriptions import HemnetDescriptionsProcessor
 from lrtc_lib.data_access.processors.process_ag_new_data import AgNewsProcessor
 from lrtc_lib.data_access.processors.process_cola_data import ColaProcessor
 from lrtc_lib.data_access.processors.process_isear_data import IsearProcessor
@@ -22,6 +22,8 @@ def get_data_processor(dataset_name: str) -> DataProcessorAPI:
     dataset_source, dataset_part = parse_dataset_name(dataset_name=dataset_name)
     if dataset_source == 'trec_50':
         return TrecProcessor(dataset_part=dataset_part, use_fine_grained_labels=True)
+    if dataset_source == 'hemnet_descriptions':
+        return HemnetDescriptionsProcessor(dataset_part=dataset_part)
     if dataset_source == 'trec':
         return TrecProcessor(dataset_part=dataset_part, use_fine_grained_labels=False)
     if dataset_source == 'isear':
