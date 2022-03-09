@@ -2,7 +2,7 @@
 
 # LICENSE: Apache License 2.0 (Apache-2.0)
 # http://www.apache.org/licenses/LICENSE-2.0
-
+import datetime
 import logging
 import os
 import pickle
@@ -17,8 +17,8 @@ from scipy.special import softmax
 from tensorflow.python.distribute import parameter_server_strategy
 from tensorflow.python.keras.callbacks import EarlyStopping, ModelCheckpoint
 from tensorflow.python.keras.engine import data_adapter
-from transformers import BertTokenizer, TFBertForSequenceClassification, InputFeatures
-from tensorflow.python.keras.mixed_precision.experimental import (loss_scale_optimizer as lso)
+from transformers import AutoTokenizer, TFBertForSequenceClassification, InputFeatures
+from tensorflow.keras.mixed_precision import LossScaleOptimizer
 from tensorflow.keras import backend as K
 
 from lrtc_lib.definitions import ROOT_DIR
@@ -26,10 +26,10 @@ from lrtc_lib.train_and_infer_service.train_and_infer_api import TrainAndInferAP
 
 MODEL_DIR = os.path.join(ROOT_DIR, "output", "models", "transformers")
 HF_CACHE_DIR = os.path.join(ROOT_DIR, "output", "temp", "hf_cache")
-
+HF_MODEL_ID = 'KBLab/sentence-bert-swedish-cased'
 
 class TrainAndInferHF(TrainAndInferAPI):
-    def __init__(self, batch_size, infer_batch_size=10, learning_rate=5e-5, debug=False, model_dir=MODEL_DIR,
+    def __init__(self, batch_size, infer_batch_size=128, learning_rate=5e-5, debug=False, model_dir=MODEL_DIR,
                  infer_with_cls=False):
         """
         :param batch_size:
@@ -50,7 +50,7 @@ class TrainAndInferHF(TrainAndInferAPI):
         self.tokenizer = self.get_tokenizer()
         # Prepare training: Compile tf.keras model with optimizer, loss and learning rate schedule
         self.learning_rate = learning_rate
-        self.max_length = 100
+        self.max_length = 64
         self.batch_size = batch_size
         if infer_batch_size == -1:
             self.infer_batch_size = batch_size
@@ -68,7 +68,7 @@ class TrainAndInferHF(TrainAndInferAPI):
         self.__dict__["tokenizer"] = self.get_tokenizer()
 
     def get_tokenizer(self):
-        return BertTokenizer.from_pretrained('bert-base-uncased', cache_dir=HF_CACHE_DIR)
+        return AutoTokenizer.from_pretrained(HF_MODEL_ID, cache_dir=HF_CACHE_DIR)
 
     def process_inputs(self, texts, labels=None, to_dataset=True):
         """
@@ -106,7 +106,7 @@ class TrainAndInferHF(TrainAndInferAPI):
                 fl.write("")
 
             # init
-            model = TFBertForSequenceClassification.from_pretrained('bert-base-uncased', cache_dir=HF_CACHE_DIR)
+            model = TFBertForSequenceClassification.from_pretrained(HF_MODEL_ID, from_pt=True, cache_dir=HF_CACHE_DIR)
             model.config.output_hidden_states = True
             optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate, epsilon=1e-06)
             loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
@@ -140,8 +140,11 @@ class TrainAndInferHF(TrainAndInferAPI):
 
             os.makedirs(model_dir)
             model_checkpoint = ModelCheckpoint(model_dir, save_best_only=True, save_weights_only=True)
-            early_stopping = EarlyStopping(monitor="val_" + metric_name, patience=epochs)
-            history = model.fit(x=input, validation_data=dev_input, epochs=epochs,
+            early_stopping = EarlyStopping(monitor="val_" + metric_name,
+                                           patience=epochs)
+            history = model.fit(x=input,
+                                validation_data=dev_input,
+                                epochs=epochs,
                                 callbacks=[early_stopping, model_checkpoint])
             with open(params_file, "wb") as fl:
                 pickle.dump(self, fl)
@@ -158,11 +161,14 @@ class TrainAndInferHF(TrainAndInferAPI):
     @infer_with_cache
     def infer(self, model_id, items_to_infer, infer_params: dict, use_cache=True):
         logging.info("Inferring with hf model...")
+        ts_start = datetime.datetime.now()
+
         items_to_infer = [x["text"] for x in items_to_infer]
         model = TFBertForSequenceClassification.from_pretrained(self.get_model_dir_by_id(model_id))
 
         if self.debug:
             items_to_infer = items_to_infer[:self.infer_batch_size]
+        #items_to_infer = items_to_infer[:10000]
 
         input = self.process_inputs(items_to_infer).batch(self.infer_batch_size)
         if self.infer_with_cls:  # get embeddings for CLS token in last hidden layer
@@ -181,7 +187,8 @@ class TrainAndInferHF(TrainAndInferAPI):
         labels = [int(np.argmax(logit)) for logit in logits]
         predictions = softmax(logits, axis=1)
         scores = [float(prediction[label]) for label, prediction in zip(labels, predictions)]
-        logging.info("Infer hf model done")
+        duration_seconds = (datetime.datetime.now() - ts_start).total_seconds()
+        logging.info(f"Infer hf model done, took {duration_seconds} seconds")
         return {"labels": labels, "scores": scores, "logits": logits.numpy().tolist(),
                 "embeddings": out_emb.numpy().tolist()}
 
@@ -272,7 +279,7 @@ def _get_grads_eager(model, x, y, params, sample_weight=None, learning_phase=0, 
 
     def _clip_scale_grads(strategy, tape, optimizer, loss, params):
         with tape:
-            if isinstance(optimizer, lso.LossScaleOptimizer):
+            if isinstance(optimizer, LossScaleOptimizer):
                 loss = optimizer.get_scaled_loss(loss)
 
         gradients = tape.gradient(loss, params)

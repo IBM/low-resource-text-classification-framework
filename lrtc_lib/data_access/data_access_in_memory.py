@@ -74,6 +74,9 @@ class DataAccessInMemory(DataAccessApi):
         :param propagate_to_duplicates: if True, also set the same labels for additional URIs that are duplicates
         of the URIs provided.
         """
+        if not texts_and_labels or not texts_and_labels[0]:
+            return {}
+
         dataset_name = utils.get_dataset_name(texts_and_labels[0][0])
         logic.labels_in_memory[workspace_id][dataset_name] = logic.get_labels(workspace_id, dataset_name)
         if propagate_to_duplicates:

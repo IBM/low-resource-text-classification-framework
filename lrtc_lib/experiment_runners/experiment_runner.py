@@ -46,7 +46,7 @@ class ExperimentParams:
 def compute_batch_scores(config, elements):
     data_access = get_data_access()
     unlabeled = data_access.sample_unlabeled_text_elements(config.workspace_id, config.train_dataset_name,
-                                                           config.category_name, 10 ** 6)["results"]
+                                                           config.category_name, 5*(10 ** 4))["results"]
     unlabeled_emb = np.array(orchestrator_api.infer(config.workspace_id, config.category_name, unlabeled)["embeddings"])
     batch_emb = np.array(orchestrator_api.infer(config.workspace_id, config.category_name, elements)["embeddings"])
 
@@ -122,12 +122,14 @@ class ExperimentRunner(object, metaclass=abc.ABCMeta):
         if orchestrator_api.workspace_exists(config.workspace_id):
             orchestrator_api.delete_workspace(config.workspace_id)
 
+        config.dev_dataset_name = None
+
         orchestrator_api.create_workspace(config.workspace_id, config.train_dataset_name,
                                           dev_dataset_name=config.dev_dataset_name)
         orchestrator_api.create_new_category(config.workspace_id, config.category_name, "No description for you")
 
-        dev_text_elements_uris = orchestrator_api.get_all_text_elements_uris(config.dev_dataset_name)
-        dev_text_elements_and_labels = oracle_data_access_api.get_gold_labels(config.dev_dataset_name,
+        dev_text_elements_uris = orchestrator_api.get_all_text_elements_uris(config.test_dataset_name)
+        dev_text_elements_and_labels = oracle_data_access_api.get_gold_labels(config.test_dataset_name,
                                                                               dev_text_elements_uris)
         if dev_text_elements_and_labels is not None:
             orchestrator_api.set_labels(config.workspace_id, dev_text_elements_and_labels)
@@ -141,7 +143,10 @@ class ExperimentRunner(object, metaclass=abc.ABCMeta):
 
         # train first model
         logging.info(f'Starting first model training (model: {config.model.name})\tworkspace: {config.workspace_id}')
-        new_model_id = orchestrator_api.train(config.workspace_id, config.category_name, config.model, train_params=config.train_params)
+        new_model_id = orchestrator_api.train(config.workspace_id,
+                                              config.category_name,
+                                              config.model,
+                                              train_params=config.train_params)
         if new_model_id is None:
             raise Exception(f'a new model was not trained\tworkspace: {config.workspace_id}')
 
@@ -192,8 +197,10 @@ class ExperimentRunner(object, metaclass=abc.ABCMeta):
                      f'for dataset: {config.train_dataset_name} and category: {config.category_name}.\t'
                      f'runtime: {end - start}\tworkspace: {config.workspace_id}')
         uris_for_labeling = [elem.uri for elem in suggested_text_elements_for_labeling]
-        uris_and_gold_labels = oracle_data_access_api.get_gold_labels(config.train_dataset_name, uris_for_labeling,
-                                                                      config.category_name)
+        uris_and_gold_labels = oracle_data_access_api.get_gold_labels(config.train_dataset_name,
+                                                                      uris_for_labeling,
+                                                                      config.category_name,
+                                                                      self.data_access)
         return suggested_text_elements_for_labeling, uris_and_gold_labels
 
     def evaluate(self, config: ExperimentParams, al, iteration, eval_dataset,

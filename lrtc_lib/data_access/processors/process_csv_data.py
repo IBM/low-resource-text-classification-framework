@@ -33,7 +33,8 @@ class CsvProcessor(DataProcessorAPI):
 
     """
 
-    def __init__(self, dataset_name: str, dataset_part: DatasetPart, text_col: str = 'text',
+    def __init__(self, dataset_name: str, dataset_part: DatasetPart,
+                 text_col: str = 'text',
                  label_col: str = 'label', context_col: str = None,
                  doc_id_col: str = None,
                  encoding: str = 'utf-8'):

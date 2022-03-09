@@ -2,12 +2,13 @@
 
 # LICENSE: Apache License 2.0 (Apache-2.0)
 # http://www.apache.org/licenses/LICENSE-2.0
-
+import json
 import logging
 
 from lrtc_lib.data_access import single_dataset_loader
 from lrtc_lib.data_access.processors.dataset_part import DatasetPart
 from lrtc_lib.oracle_data_access import gold_labels_loader
+import lrtc_lib.oracle_data_access.core.utils as oracle_utils
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s')
 
@@ -26,6 +27,19 @@ def load(dataset: str, force_new: bool = False):
         logging.info('-' * 60)
 
 
+def clear_labels(dataset_name):
+    f = oracle_utils.get_labels_dump_filename(dataset_name+"_train")
+    with open(f, "r") as fp:
+        json_dump = json.load(fp)
+        for uri in json_dump.keys():
+            json_dump[uri] = {}
+    with open(f, "w") as fp:
+        json.dump(json_dump, fp)
+
+
 if __name__ == '__main__':
-    dataset_name = 'polarity'
-    load(dataset=dataset_name)
+    dataset_name = 'hemnet_descriptions'
+    #load(dataset=dataset_name, force_new=True)
+    clear_labels(dataset_name)
+
+

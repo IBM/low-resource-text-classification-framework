@@ -21,7 +21,7 @@ Adapted from https://github.com/dsgissin/DiscriminativeActiveLearning
 
 class DiscriminativeRepresentationSampling(ActiveLearner):
 
-    def __init__(self, max_to_consider=10 ** 6):
+    def __init__(self, max_to_consider=5 * (10 ** 4)):
         self.max_to_consider = max_to_consider
         self.sub_batches = 5
 

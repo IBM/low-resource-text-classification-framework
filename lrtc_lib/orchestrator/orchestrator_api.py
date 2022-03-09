@@ -6,6 +6,7 @@
 import glob
 import logging
 import os
+import random
 import traceback
 from collections import Counter
 from enum import Enum
@@ -338,7 +339,7 @@ def train(workspace_id: str, category_name: str, model_type: ModelType, train_pa
     dataset_name = workspace.dataset_name
     (train_data, train_counts), (dev_data, dev_counts) = train_and_dev_sets_selector.get_train_and_dev_sets(
         workspace_id=workspace_id, train_dataset_name=dataset_name, category_name=category_name,
-        dev_dataset_name=workspace.dev_dataset_name)
+        dev_dataset_name=workspace.test_dataset_name or 'hemnet_descriptions_test')
     logging.info(f"training a new model with {train_counts}")
 
     # label_counts != train_counts as train_counts may refer to negative and weak negative labels separately
@@ -443,6 +444,11 @@ def infer(workspace_id: str, category_name: str, texts_to_infer: Sequence[TextEl
 
     train_and_infer = PROJECT_PROPERTIES["train_and_infer_factory"].get_train_and_infer(model.model_type)
     list_of_dicts = [{"text": element.text} for element in texts_to_infer]
+
+    #n_sample = 10000
+    #if len(list_of_dicts) > n_sample:
+    #    list_of_dicts = random.sample(list_of_dicts, n_sample)
+
     infer_results = train_and_infer.infer(model_id=model.model_id, items_to_infer=list_of_dicts,
                                           infer_params=infer_params, use_cache=use_cache)
 
